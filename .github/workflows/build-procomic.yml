@@ -1,0 +1,47 @@
+name: Build ProComic
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract build kit
+        run: |
+          unzip -o procomic-github-build-kit.zip -d kit
+
+      - name: Checkout Keiyoushi source
+        uses: actions/checkout@v4
+        with:
+          repository: keiyoushi/extensions-source
+          path: keiyoushi-source
+
+      - name: Copy ProComic extension
+        run: |
+          mkdir -p keiyoushi-source/src/ar/procomic
+          cp -r kit/procomic-github-build-kit/src/ar/procomic/* keiyoushi-source/src/ar/procomic/
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build APK
+        working-directory: keiyoushi-source
+        run: |
+          chmod +x gradlew
+          ./gradlew :src:ar:procomic:assembleRelease --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProComic
+          path: keiyoushi-source/src/ar/procomic/build/outputs/apk/release/*.apk
