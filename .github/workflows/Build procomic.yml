@@ -1,4 +1,4 @@
-Name: Build ProComic
+name: Build ProComic
 
 on:
   workflow_dispatch:
@@ -45,16 +45,17 @@ jobs:
         run: |
           set -e
 
-          # البحث عن مجلد procomic الذي يحتوي مباشرة على build.gradle.kts
-          EXT_DIR="$(find kit -type f -name "build.gradle.kts" -path "*/src/ar/procomic/*" -exec dirname {} \; | head -n 1)"
+          EXT_DIR="$(find kit -type d -path '*/src/ar/procomic' -print -quit)"
 
           if [ -z "$EXT_DIR" ]; then
-            echo "ERROR: ProComic extension directory containing build.gradle.kts not found."
+            echo "ERROR: ProComic extension directory not found."
             find kit -maxdepth 8 -type f | sort
             exit 1
           fi
 
-          echo "Extension directory found at: $EXT_DIR"
+          echo "Extension directory:"
+          echo "$EXT_DIR"
+
           echo "EXT_DIR=$EXT_DIR" >> "$GITHUB_ENV"
 
       - name: Checkout Keiyoushi source
@@ -68,18 +69,14 @@ jobs:
         run: |
           set -e
 
-          # تنظيف المجلد المستهدف وإنشائه
           rm -rf keiyoushi-source/src/ar/procomic
+
           mkdir -p keiyoushi-source/src/ar/procomic
 
-          # نسخ كافة محتويات مجلد الإضافة بالكامل
-          cp -R "$EXT_DIR"/* keiyoushi-source/src/ar/procomic/
+          cp -r "$EXT_DIR"/. keiyoushi-source/src/ar/procomic/
 
-          # التأكد من تسجيل الإضافة في settings.gradle.kts الخاص بـ Keiyoushi إن لم تكن مسجلة
-          if ! grep -q ":src:ar:procomic" keiyoushi-source/settings.gradle.kts; echo 'include(":src:ar:procomic")' >> keiyoushi-source/settings.gradle.kts; fi
-
-          echo "Installed ProComic structure:"
-          find keiyoushi-source/src/ar/procomic -maxdepth 5 | sort
+          echo "Installed ProComic:"
+          find keiyoushi-source/src/ar/procomic -maxdepth 10 -type f | sort
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -121,4 +118,3 @@ jobs:
             keiyoushi-source/**/*.apk
           if-no-files-found: error
           retention-days: 7
-          
